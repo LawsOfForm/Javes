@@ -42,7 +42,7 @@ OpenCode/
 - API key stored at:
 
 ```
-/home/spencer/Dokumente/Bürokratie/API_Greifswald/API.json
+/path/to/your/API/Key/API.json
 ```
 
 The key file must look like this:
