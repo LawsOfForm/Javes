@@ -1,10 +1,9 @@
 [project]
-name = "opencode"
+name = "beehub-agent"
 version = "0.1.0"
-description = "PDF Q&A with AppHub LLM API, running in Docker"
-readme = "README.md"
+description = "BEEHub transform agent: CSV + paradigm notes -> BIDS-compliant BEEHub project"
 requires-python = ">=3.12"
 dependencies = [
     "openai>=1.40,<2.0",
-    "pypdf>=4.0,<5.0",
+    "pandas>=2.2,<3.0",
 ]

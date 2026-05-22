@@ -1,8 +1,9 @@
 {
   "_comment": [
-    "NEVER put a real API key in this file — it is committed to git.",
-    "The api_key below is a placeholder. The real key is loaded at runtime",
-    "from APPHUB_KEY_FILE or APPHUB_API_KEY. See README §'API key handling'."
+    "NEVER put a real API key in this file.",
+    "The api_key value below is a placeholder — the actual key is loaded",
+    "at runtime from the path set in APPHUB_KEY_FILE (or APPHUB_API_KEY env var).",
+    "See README.md §'API key handling' for the full priority order."
   ],
   "providers": {
     "custom": {
