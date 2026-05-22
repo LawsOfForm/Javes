@@ -3,7 +3,7 @@
     "custom": {
       "name": "Uni Greifswald",
       "baseURL": "https://apphubai.wolke.uni-greifswald.de/v1",
-      "api_key": "qtFwbYNksoh8l9PyncZcZMPuzv6uzvv3",
+      "api_key": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
       "models": {
         "Qwen/Qwen3-VL-30B-A3B-Instruct-FP8": {
           "id": "Qwen3-VL-30B-A3B-Instruct-FP8",
