@@ -3,13 +3,8 @@ OpenCode — PDF Q&A
 ==================
 AI-powered PDF reader running in Docker, using the Uni Greifswald AppHub API.
 
-API key priority (first match wins):
-  1. APPHUB_API_KEY      env var  (plain string — visible in `docker inspect`)
-  2. APPHUB_KEY_FILE     env var  pointing to a JSON file with field
-                                  "API_key", "API_Apphub", "api_key", or "key"
-  3. /run/secrets/apphub_key.json (Docker bind-mount secret — recommended)
-
-The key is never logged, never written to disk.
+The key is read from /home/niemannf/Documents/Linux/AI_API_Key/API.json,
+mounted read-only into the container. The key is never logged or written to disk.
 """
 
 from __future__ import annotations
@@ -33,71 +28,48 @@ log = logging.getLogger("opencode")
 # API key loading
 # ---------------------------------------------------------------------------
 
-_KEY_FIELD_NAMES = ("API_key", "API_Apphub", "api_key", "key")
-
-
-def _load_key_from_json(path: Path) -> str:
-    """Read one of the recognised field names from a JSON key file."""
-    if not path.exists():
-        raise FileNotFoundError(f"Key file not found: {path}")
-    if not path.is_file():
-        raise ValueError(f"Key path is not a file: {path}")
-
-    # Warn if the file is group- or world-readable
-    mode = path.stat().st_mode & 0o777
-    if mode & 0o044:
-        log.warning(
-            "Key file %s has permissions %o — consider `chmod 600 %s`",
-            path, mode, path,
-        )
-
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError) as exc:
-        raise SystemExit(f"Cannot read API key file {path}: {exc}") from exc
-
-    for field in _KEY_FIELD_NAMES:
-        if field in data and isinstance(data[field], str):
-            value = data[field].strip()
-            if value:
-                log.info("API key loaded from %s (field: %s)", path, field)
-                return value
-
-    raise SystemExit(
-        f"Key file {path} found but none of the expected fields "
-        f"({', '.join(_KEY_FIELD_NAMES)}) contained a non-empty string."
-    )
+_KEY_FILE = Path("/run/secrets/apphub_key.json")
+_KEY_FIELD = "API_Apphub"
 
 
 def load_api_key() -> str:
     """
-    Load the API key with priority:
-      1. APPHUB_API_KEY   plain env var
-      2. APPHUB_KEY_FILE  path to a JSON key file
-      3. /run/secrets/apphub_key.json  (Docker bind-mount secret)
+    Read the AppHub API key from the mounted JSON file.
+
+    The file must be bind-mounted read-only at /run/secrets/apphub_key.json:
+      --mount type=bind,source=/home/niemannf/Documents/Linux/AI_API_Key/API.json,
+              target=/run/secrets/apphub_key.json,readonly
+
+    The key is never logged, never written to disk.
     """
-    # 1. Direct env var
-    key = os.environ.get("APPHUB_API_KEY", "").strip()
-    if key:
-        return key
+    if not _KEY_FILE.exists():
+        raise SystemExit(
+            f"Key file not found at {_KEY_FILE}.\n"
+            "Mount your API.json with:\n"
+            "  --mount type=bind,"
+            "source=/home/niemannf/Documents/Linux/AI_API_Key/API.json,"
+            "target=/run/secrets/apphub_key.json,readonly"
+        )
 
-    # 2 & 3. JSON file — explicit path first, then Docker secret default
-    candidates: list[Path] = []
-    env_path = os.environ.get("APPHUB_KEY_FILE", "").strip()
-    if env_path:
-        candidates.append(Path(env_path))
-    candidates.append(Path("/run/secrets/apphub_key.json"))
+    mode = _KEY_FILE.stat().st_mode & 0o777
+    if mode & 0o044:
+        log.warning(
+            "Key file %s has permissions %o — fix with: chmod 600 %s",
+            _KEY_FILE, mode,
+            "/home/niemannf/Documents/Linux/AI_API_Key/API.json",
+        )
 
-    for path in candidates:
-        if path.exists():
-            return _load_key_from_json(path)
+    try:
+        data = json.loads(_KEY_FILE.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        raise SystemExit(f"Cannot read key file {_KEY_FILE}: {exc}") from exc
 
-    raise SystemExit(
-        "No API key found. Provide one of:\n"
-        "  APPHUB_API_KEY=<key>                         (plain env var)\n"
-        "  APPHUB_KEY_FILE=/path/to/key.json            (JSON file)\n"
-        "  --mount .../api.json:/run/secrets/apphub_key.json,readonly"
-    )
+    value = data.get(_KEY_FIELD, "").strip()
+    if not value:
+        raise SystemExit(
+            f"Key file {_KEY_FILE} has no field '{_KEY_FIELD}' or it is empty."
+        )
+    return value
 
 
 # ---------------------------------------------------------------------------
